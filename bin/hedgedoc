@@ -40,6 +40,10 @@ Usage:
     \$ $SCRIPTNAME history
 
 Commands:
+    edit
+        Select a note to edit from a menu, open vim to edit it, and upload it
+        once finished, cleaning up any remaining files.
+
     import <path> [note_id]
         Import the contents of a given file as a new HedgeDoc note on the server.
         Takes an optional note_id, if not given it will generate a random one.
@@ -137,6 +141,22 @@ function read_password() {
 
 
 ### Main Commands
+
+function edit_note() {
+  display=${1:-9}
+  PS3="Please pick a note to edit: "
+  COLUMNS=35
+  select n in $(user_history | tail -$display); do
+      if [ -n "$n" ]; then
+          noteID=$(echo $n | cut -f 1)
+          export_note --md $noteID
+          vim ${noteID}.md
+          import_note ${noteID}.md $noteID
+          rm ${noteID}.md
+       exit 0
+      fi
+  done
+}
 
 function publish_note() {
     local note_id="$1"
@@ -381,6 +401,9 @@ function main() {
             echo "$help_str"
             return 0
             ;;
+        edit)
+            edit_note
+            ;;
         import|import-as)
             import_note "${1:-}" "${2:-}"
             ;;
@@ -422,4 +445,3 @@ fi
 if [[ "${1:-}" != "--import" ]]; then
     main "$@" || exit $?
 fi
-
